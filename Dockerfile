@@ -16,7 +16,7 @@ RUN apt-get update -y && \
     apt-get install -y --no-install-recommends sudo apt-utils && \
     apt-get install -y --no-install-recommends openssh-server \
         python-dev python-numpy python-pip python-virtualenv python-scipy \
-        gcc gfortran libopenmpi-dev openmpi-bin openmpi-common openmpi-doc binutils && \
+        gcc gfortran make cmake libmpich-dev mpich binutils && \
     apt-get clean && apt-get purge && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 RUN mkdir /var/run/sshd
@@ -52,9 +52,9 @@ ADD ssh/id_rsa.mpi.pub ${SSHDIR}/authorized_keys
 RUN chmod -R 600 ${SSHDIR}* && \
     chown -R ${USER}:${USER} ${SSHDIR}
 
-RUN pip install --upgrade pip \
-    && pip install -U setuptools \
-    && pip install mpi4py
+# RUN pip install --upgrade pip \
+#     && pip install -U setuptools \
+#     && pip install mpi4py
 
 # ------------------------------------------------------------
 # Configure OpenMPI
@@ -69,9 +69,15 @@ RUN chown -R ${USER}:${USER} ${HOME}/.openmpi
 # ------------------------------------------------------------
 
 ENV TRIGGER 1
+RUN mkdir /mpiapp
+ADD main.c /mpiapp 
+ADD CMakeLists.txt /mpiapp 
+WORKDIR /mpiapp 
+RUN cmake .
+RUN make  
 
-ADD mpi4py_benchmarks ${HOME}/mpi4py_benchmarks
-RUN chown -R ${USER}:${USER} ${HOME}/mpi4py_benchmarks
+# ADD mpi4py_benchmarks ${HOME}/mpi4py_benchmarks
+# RUN chown -R ${USER}:${USER} ${HOME}/mpi4py_benchmarks
 
 EXPOSE 22
 CMD ["/usr/sbin/sshd", "-D"]
